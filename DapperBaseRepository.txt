@@ -1,0 +1,102 @@
+public abstract class Repository<T> : IRepository<T> where T : IEntity
+    {
+        public abstract string TableName { get; }
+        protected readonly string _connectionString;
+
+        public Repository(IConfiguration configuration)
+        {
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
+        }
+        public virtual async Task<int> AddAsync(T entity)
+        {
+            var columnList = string.Empty;
+            var propList = string.Empty;
+            foreach (var prop in typeof(T).GetProperties())
+            {
+                if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(IList<>).GetGenericTypeDefinition())
+                    continue;
+
+                columnList += "[" + prop.Name + "],";
+                propList += "@" + prop.Name + ",";
+            }
+            columnList = columnList.TrimEnd(',');
+            propList = propList.TrimEnd(',');
+
+            var sql = $"Insert into {TableName} ({columnList}) VALUES ({propList})";
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                var result = await connection.ExecuteAsync(sql, entity);
+                return result;
+            }
+        }
+
+        public virtual async Task<int> DeleteAsync(Guid id)
+        {
+            var sql = $"DELETE FROM {TableName} WHERE Id = @Id";
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                var result = await connection.ExecuteAsync(sql, new { Id = id });
+                return result;
+            }
+        }
+
+        public async Task<IReadOnlyList<T>> GetAllAsync()
+        {
+            var sql = $"SELECT * FROM {TableName}";
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                var result = await connection.QueryAsync<T>(sql);
+                return result.ToList();
+            }
+        }
+
+        public async Task<T> GetByIdAsync(Guid id)
+        {
+            var sql = $"SELECT * FROM {TableName} WHERE Id = @Id";
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                var result = await connection.QuerySingleOrDefaultAsync<T>(sql, new { Id = id });
+                return result;
+            }
+        }
+
+        public virtual async Task<int> UpdateAsync(T entity)
+        {
+            var commandQuery = string.Empty;
+            foreach (var prop in typeof(T).GetProperties())
+            {
+                if (prop.Name == "Id")
+                    continue;
+
+                if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(IList<>).GetGenericTypeDefinition())
+                    continue;
+
+                commandQuery += string.Format("[{0}] = @{0},", prop.Name);
+            }
+
+            commandQuery = commandQuery.TrimEnd(',');
+
+            var sql = $"UPDATE {TableName} SET {commandQuery} WHERE Id = @Id";
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                var result = await connection.ExecuteAsync(sql, entity);
+                return result;
+            }
+        }
+    }
+
+
+
+
+
+public interface IEntity
+    {
+        public Guid Id { get; set; }
+    }
+
+
