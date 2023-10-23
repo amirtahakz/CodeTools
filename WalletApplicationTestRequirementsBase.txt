@@ -1,0 +1,23 @@
+public class WalletApplicationTestRequirementsBase
+    {
+        public Guid TestUserId { get; set; }
+        public IMediator Mediator { get; set; }
+
+
+        public WalletApplicationTestRequirementsBase()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", true)
+                .Build();
+            Startup startup = new Startup(configuration);
+            ServiceCollection sc = new ServiceCollection();
+            startup.ConfigureServices(sc);
+            IServiceProvider serviceProvider = sc.BuildServiceProvider();
+            //var services = serviceProvider;
+            //services.AddMediatR(Assembly.GetExecutingAssembly());
+
+            Mediator = serviceProvider.GetService<IMediator>();
+
+            TestUserId = Guid.Parse("1f5a3034-6c37-425e-9503-7910ead29515");
+        }
+    }
