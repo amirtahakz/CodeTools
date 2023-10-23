@@ -1,0 +1,44 @@
+public static class AutoMapperExtention
+    {
+        public static void AddAutoMapper(this IServiceCollection services)
+        {
+            var types = new[]
+            {
+                typeof(BuyOrder_Customer_Mapper),
+                typeof(TradeBuyOrder_Customer_Mapper),
+                typeof(Deposit_Customer_Ipg_Mapper),
+                typeof(TradeSellOrder_Customer_Mapper),
+                typeof(TradeBuyOrder_System_Mapper),
+                typeof(TradeSellOrder_System_Mapper),
+                typeof(WithdrawalRequest_Customer_Mapper),
+                typeof(CancelBuyOrder_Customer_Mapper),
+                typeof(CancelWithdrawalRequest_Customer_Mapper),
+                typeof(ConfirmWithdrawalRequest_Customer_Mapper),
+                typeof(EditBuyOrder_Customer_Mapper),
+                typeof(RevokeBuyTrade_System_Mapper),
+                typeof(RevokeSellTrade_System_Mapper),
+                typeof(RevokeWithdrawal_System_Mapper),
+                typeof(RollbackEditBuyOrder_Customer_Mapper),
+                typeof(SellOrder_System_Mapper),
+                typeof(EditSellOrder_Customer_Mapper),
+            };
+
+            var profiles = types
+                .Select(t => t.Assembly)
+                .SelectMany(o => o.GetExportedTypes())
+                .Where(t => typeof(Profile).GetTypeInfo().IsAssignableFrom(t.GetTypeInfo()))
+                .Where(t => !t.GetTypeInfo().IsAbstract);
+
+            var mapperConfig = new MapperConfiguration(mc =>
+            {
+                foreach (var profile in profiles)
+                {
+                    mc.AddProfile(profile);
+                }
+            });
+
+            IMapper mapper = mapperConfig.CreateMapper();
+
+            services.AddSingleton(mapper);
+        }
+    }
