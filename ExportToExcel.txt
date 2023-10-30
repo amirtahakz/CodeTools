@@ -1,0 +1,10 @@
+ public async Task<IActionResult> ExportToExcel<T>(IEnumerable<T> models)
+        {
+            using (var excelFile = new ExcelPackage())
+            {
+                var worksheet = excelFile.Workbook.Worksheets.Add("Sheet1");
+                worksheet.Cells["A1"].LoadFromCollection(Collection: models, PrintHeaders: true);
+                var bytes = excelFile.GetAsByteArray();
+                return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"TransactionsReport.xlsx");
+            }
+        }
